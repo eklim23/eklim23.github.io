@@ -1,0 +1,659 @@
+---
+// 글쓰기 화면. 사이트 메뉴에는 없고 /write 로 직접 들어온다. 검색 엔진에는 노출하지 않는다.
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>글쓰기 — eklim23</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" />
+  </head>
+  <body>
+    <!-- 토큰 입력 -->
+    <section class="login" data-view="login" hidden>
+      <form class="login-card" data-login>
+        <h1>글쓰기</h1>
+        <p>글을 저장하려면 GitHub 토큰이 한 번 필요합니다. 토큰은 이 브라우저에만 저장됩니다.</p>
+        <ol>
+          <li>
+            <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
+              GitHub 토큰 만들기 페이지 열기 ↗
+            </a>
+          </li>
+          <li><b>Repository access</b> → Only select repositories → <code>eklim23.github.io</code></li>
+          <li><b>Permissions</b> → Contents: <b>Read and write</b>, Actions: <b>Read-only</b></li>
+          <li>만든 토큰을 아래에 붙여넣기</li>
+        </ol>
+        <input name="token" type="password" placeholder="github_pat_…" autocomplete="off" required />
+        <button type="submit" class="btn btn-primary">시작하기</button>
+        <p class="login-error" data-login-error></p>
+      </form>
+    </section>
+
+    <!-- 편집 화면 -->
+    <div class="app" data-view="app" hidden>
+      <aside class="side" data-side>
+        <div class="side-head">
+          <span class="ws-icon">E</span>
+          <span class="ws-name">eklim23</span>
+        </div>
+        <input class="side-search" type="search" placeholder="검색" data-search />
+        <button type="button" class="side-new" data-new="writeups">＋ 새 라이트업</button>
+        <button type="button" class="side-new" data-new="projects">＋ 새 프로젝트</button>
+        <nav class="side-list" data-list></nav>
+        <div class="side-foot">
+          <a href="/" target="_blank">사이트 보기 ↗</a>
+          <button type="button" data-logout>토큰 지우기</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button type="button" class="menu-btn" data-toggle-side aria-label="목록 열기">☰</button>
+          <span class="crumb" data-crumb></span>
+          <span class="status" data-status></span>
+          <div class="actions" data-actions hidden>
+            <button type="button" class="btn btn-primary" data-publish>게시</button>
+            <div class="more">
+              <button type="button" class="btn btn-ghost" data-more aria-haspopup="true">⋯</button>
+              <div class="more-menu" data-more-menu hidden>
+                <button type="button" data-save-draft>임시 글로 저장 <small>사이트에는 안 보임</small></button>
+                <a data-view-link target="_blank">사이트에서 보기 ↗</a>
+                <button type="button" data-revert>저장된 버전으로 되돌리기</button>
+                <button type="button" class="danger" data-delete>글 삭제</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="empty" data-empty>
+          <p>왼쪽에서 글을 고르거나 새 글을 만드세요.</p>
+          <button type="button" class="btn btn-primary" data-new="writeups">＋ 새 라이트업</button>
+        </div>
+
+        <article class="page" data-page hidden>
+          <textarea class="title" rows="1" placeholder="제목 없음" data-title></textarea>
+          <div class="props" data-props></div>
+          <div class="editor" data-editor></div>
+        </article>
+      </main>
+    </div>
+
+    <div class="toast" data-toast hidden></div>
+
+    <script>
+      import '../scripts/write/app';
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  @import '@milkdown/crepe/theme/common/prosemirror.css';
+  @import '@milkdown/crepe/theme/common/reset.css';
+  @import '@milkdown/crepe/theme/common/block-edit.css';
+  @import '@milkdown/crepe/theme/common/code-mirror.css';
+  @import '@milkdown/crepe/theme/common/cursor.css';
+  @import '@milkdown/crepe/theme/common/image-block.css';
+  @import '@milkdown/crepe/theme/common/link-tooltip.css';
+  @import '@milkdown/crepe/theme/common/list-item.css';
+  @import '@milkdown/crepe/theme/common/placeholder.css';
+  @import '@milkdown/crepe/theme/common/toolbar.css';
+  @import '@milkdown/crepe/theme/common/table.css';
+  @import '@milkdown/crepe/theme/frame.css';
+
+  :root {
+    --text: #37352f;
+    --muted: #9b9a97;
+    --line: rgba(55, 53, 47, 0.12);
+    --hover: rgba(55, 53, 47, 0.06);
+    --side: #f7f7f5;
+    --blue: #3540ff;
+    --font: 'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    height: 100%;
+    background: #fff;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+    border: 0;
+    background: none;
+    padding: 0;
+  }
+  a {
+    color: inherit;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.1);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .btn-ghost:hover {
+    background: var(--hover);
+  }
+
+  /* ---------- 로그인 ---------- */
+  .login {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--side);
+  }
+  .login-card {
+    width: min(460px, 100%);
+    padding: 32px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 30px rgba(15, 15, 15, 0.08);
+    line-height: 1.6;
+  }
+  .login-card h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+  }
+  .login-card p {
+    margin: 0 0 16px;
+    color: #6b6a66;
+  }
+  .login-card ol {
+    margin: 0 0 20px;
+    padding-left: 20px;
+  }
+  .login-card li {
+    margin-bottom: 6px;
+  }
+  .login-card a {
+    color: var(--blue);
+  }
+  .login-card code {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--hover);
+  }
+  .login-card input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .login-card .btn {
+    width: 100%;
+    justify-content: center;
+    height: 38px;
+  }
+  .login-error {
+    margin: 12px 0 0 !important;
+    color: #e03e3e !important;
+    font-size: 14px;
+  }
+
+  /* ---------- 레이아웃 ---------- */
+  .app {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    height: 100%;
+  }
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 8px;
+    background: var(--side);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+  }
+  .side-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px 12px;
+    font-weight: 600;
+  }
+  .ws-icon {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--text);
+    color: #fff;
+    font-size: 12px;
+  }
+  .side-search {
+    height: 30px;
+    margin: 0 4px 8px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--hover);
+    outline: none;
+  }
+  .side-new,
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 30px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-align: left;
+    color: #5f5e5b;
+    text-decoration: none;
+  }
+  .side-new:hover,
+  .side-item:hover {
+    background: var(--hover);
+  }
+  .side-group {
+    margin: 16px 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .side-item {
+    color: var(--text);
+  }
+  .side-item.is-active {
+    background: rgba(55, 53, 47, 0.1);
+    font-weight: 500;
+  }
+  .side-item .t {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .side-item .t.is-empty {
+    color: var(--muted);
+  }
+  .badge {
+    flex: none;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: rgba(55, 53, 47, 0.08);
+    color: #6b6a66;
+  }
+  .badge-local {
+    background: #fbecdd;
+    color: #c77d48;
+  }
+  .cat {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: #91918e;
+  }
+  .side-foot {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 10px 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .side-foot a {
+    text-decoration: none;
+  }
+  .side-foot a:hover,
+  .side-foot button:hover {
+    color: var(--text);
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-y: auto;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+  }
+  .menu-btn {
+    display: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  .crumb {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+  .crumb .sep {
+    margin: 0 6px;
+    color: var(--muted);
+  }
+  .status {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .status a {
+    color: var(--blue);
+  }
+  .actions {
+    display: flex;
+    gap: 4px;
+  }
+  .more {
+    position: relative;
+  }
+  .more-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    width: 240px;
+    padding: 6px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow:
+      0 0 0 1px var(--line),
+      0 8px 24px rgba(15, 15, 15, 0.12);
+  }
+  .more-menu > * {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 5px;
+    text-align: left;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .more-menu > *:hover {
+    background: var(--hover);
+  }
+  .more-menu small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .more-menu .danger {
+    color: #e03e3e;
+  }
+
+  .empty {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  /* ---------- 페이지 ---------- */
+  .page {
+    width: min(760px, 100%);
+    margin: 0 auto;
+    padding: 72px 48px 160px;
+  }
+  .title {
+    width: 100%;
+    border: 0;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    padding: 0;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .title::placeholder {
+    color: rgba(55, 53, 47, 0.2);
+  }
+
+  .props {
+    margin: 20px 0 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .prop {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    align-items: center;
+    min-height: 34px;
+  }
+  .prop-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .prop-label i {
+    width: 16px;
+    font-style: normal;
+    text-align: center;
+  }
+  .prop input[type='text'],
+  .prop input[type='url'],
+  .prop input[type='date'] {
+    width: 100%;
+    height: 30px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    outline: none;
+  }
+  .prop input:hover,
+  .prop input:focus {
+    background: var(--hover);
+  }
+  .prop input::placeholder {
+    color: rgba(55, 53, 47, 0.3);
+  }
+  .prop input:disabled {
+    color: var(--muted);
+    background: transparent;
+  }
+  .prop-slug {
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .prop-slug input {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding-left: 2px !important;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .chip-opt {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    background: rgba(55, 53, 47, 0.06);
+    color: #6b6a66;
+  }
+  .chip-opt:hover {
+    background: rgba(55, 53, 47, 0.12);
+  }
+  .chip-opt[aria-pressed='true'] {
+    color: #fff;
+    background: var(--c, var(--text));
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  /* 카테고리 색 (노션 태그 색) */
+  [data-cat='web'] {
+    --c: #2f6fde;
+  }
+  [data-cat='pwn'] {
+    --c: #d44c47;
+  }
+  [data-cat='rev'] {
+    --c: #9065b0;
+  }
+  [data-cat='crypto'] {
+    --c: #cb912f;
+  }
+  [data-cat='forensics'] {
+    --c: #448361;
+  }
+  [data-cat='misc'] {
+    --c: #787774;
+  }
+  .cat[data-cat] {
+    background: var(--c);
+  }
+
+  /* ---------- 편집기 (Milkdown Crepe) ---------- */
+  .editor .milkdown {
+    --crepe-color-on-background: var(--text);
+    --crepe-color-on-surface: var(--text);
+    --crepe-color-primary: var(--blue);
+    --crepe-color-inline-code: #eb5757;
+    --crepe-font-title: var(--font);
+    --crepe-font-default: var(--font);
+    --crepe-font-code: var(--mono);
+    --crepe-base-font-size: 16px;
+  }
+  .editor .milkdown .ProseMirror {
+    padding: 16px 0 0;
+    line-height: 1.75;
+  }
+  .editor .milkdown .ProseMirror :is(h1, h2, h3) {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .editor .milkdown .ProseMirror h2 {
+    margin-top: 1.6em;
+  }
+  .editor .milkdown .ProseMirror blockquote {
+    border-left: 3px solid var(--text);
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #2f2f2f;
+    color: #fff;
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+  }
+
+  @media (max-width: 800px) {
+    .app {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 280px;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.25s;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+    }
+    .side.is-open {
+      transform: none;
+    }
+    .menu-btn {
+      display: block;
+    }
+    .page {
+      padding: 32px 20px 120px;
+    }
+    .title {
+      font-size: 30px;
+    }
+    .prop {
+      grid-template-columns: 110px minmax(0, 1fr);
+    }
+  }
+</style>
