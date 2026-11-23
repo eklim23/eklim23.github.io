@@ -1,0 +1,11 @@
+{
+  // 마크다운 파일에 이미지를 붙여넣거나(⌘V) 끌어다 놓으면 글 폴더에 저장하고 ![](./image.png) 를 넣어준다.
+  "markdown.editor.filePaste.enabled": "always",
+  "markdown.editor.filePaste.copyIntoWorkspace": "mediaFiles",
+  "markdown.editor.drop.enabled": "always",
+  "markdown.editor.drop.copyIntoWorkspace": "mediaFiles",
+  "markdown.copyFiles.destination": {
+    "src/content/**/*.md": "${documentDirName}/"
+  },
+  "markdown.copyFiles.overwriteBehavior": "nameIncrementally"
+}

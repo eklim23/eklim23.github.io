@@ -1,0 +1,39 @@
+---
+import { render } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import { categories } from '../../data/site';
+import { getWriteups, formatDate } from '../../data/content';
+
+export async function getStaticPaths() {
+  const all = await getWriteups();
+  return all.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: { entry, newer: all[i - 1], older: all[i + 1] },
+  }));
+}
+
+const { entry, newer, older } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+
+const meta = [
+  { label: 'Platform', value: d.platform, href: d.link ?? undefined },
+  { label: 'Category', value: categories[d.category] },
+  ...(d.level != null && d.level !== '' ? [{ label: 'Level', value: String(d.level) }] : []),
+  { label: 'Date', value: formatDate(d.date) },
+  ...(d.tags.length ? [{ label: 'Tags', value: d.tags.join(', ') }] : []),
+];
+---
+
+<Article
+  title={d.title}
+  description={d.description ?? undefined}
+  kicker={`${d.platform} / ${categories[d.category]}`}
+  meta={meta}
+  headings={headings}
+  back={{ href: '/writeups/', label: 'All writeups' }}
+  prev={older && { href: `/writeups/${older.id}/`, title: older.data.title }}
+  next={newer && { href: `/writeups/${newer.id}/`, title: newer.data.title }}
+>
+  <Content />
+</Article>

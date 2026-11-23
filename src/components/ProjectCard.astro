@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { pad } from '../data/content';
+
+interface Props {
+  entry: CollectionEntry<'projects'>;
+  index: number;
+}
+const { entry, index } = Astro.props;
+const { title, description, period, stack, draft } = entry.data;
+const tones = ['dark', 'blue', 'light', 'white'];
+---
+
+<article class="card" data-reveal data-delay={(index % 2) * 0.1}>
+  <a href={`/projects/${entry.id}/`}>
+    <div class="card-tile" data-tone={tones[index % tones.length]}>
+      <div class="card-tile-inner">
+        <div class="label" style="display:flex;justify-content:space-between">
+          <span>{period}</span>
+          <span>{pad(index + 1)}</span>
+        </div>
+        <span class="card-big title-kr">{title}</span>
+      </div>
+      <span class="card-go" aria-hidden="true">→</span>
+    </div>
+    <div class="card-body">
+      <div>
+        <h3 class="card-title title-kr">{title}{draft && ' (draft)'}</h3>
+        {description && <p class="card-sub">{description}</p>}
+        <div class="card-stack">
+          {stack.map((s) => <span class="chip">{s}</span>)}
+        </div>
+      </div>
+    </div>
+  </a>
+</article>

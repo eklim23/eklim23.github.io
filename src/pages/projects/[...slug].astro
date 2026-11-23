@@ -1,0 +1,38 @@
+---
+import { render } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import { getProjects, formatDate } from '../../data/content';
+
+export async function getStaticPaths() {
+  const all = await getProjects();
+  return all.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: { entry, newer: all[i - 1], older: all[i + 1] },
+  }));
+}
+
+const { entry, newer, older } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+
+const meta = [
+  { label: 'Period', value: d.period ?? formatDate(d.date) },
+  ...(d.role ? [{ label: 'Role', value: d.role }] : []),
+  ...(d.stack.length ? [{ label: 'Stack', value: d.stack.join(', ') }] : []),
+  ...(d.repo ? [{ label: 'Source', value: 'GitHub', href: d.repo }] : []),
+  ...(d.demo ? [{ label: 'Demo', value: 'Live', href: d.demo }] : []),
+];
+---
+
+<Article
+  title={d.title}
+  description={d.description ?? undefined}
+  kicker="Project"
+  meta={meta}
+  headings={headings}
+  back={{ href: '/projects/', label: 'All projects' }}
+  prev={older && { href: `/projects/${older.id}/`, title: older.data.title }}
+  next={newer && { href: `/projects/${newer.id}/`, title: newer.data.title }}
+>
+  <Content />
+</Article>

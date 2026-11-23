@@ -1,0 +1,27 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { getProjects } from '../../data/content';
+
+const projects = await getProjects();
+---
+
+<Base title="Projects" description="프로젝트 기록">
+  <header class="page-head wrap">
+    <h1 class="display"><span data-split="chars">Projects</span></h1>
+  </header>
+
+  <section class="wrap">
+    {
+      projects.length ? (
+        <div class="cards">
+          {projects.map((p, i) => (
+            <ProjectCard entry={p} index={i} />
+          ))}
+        </div>
+      ) : (
+        <p class="label">No posts yet.</p>
+      )
+    }
+  </section>
+</Base>

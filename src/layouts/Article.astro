@@ -1,0 +1,207 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Base from './Base.astro';
+
+interface Meta {
+  label: string;
+  value: string;
+  href?: string;
+}
+interface Props {
+  title: string;
+  description?: string;
+  kicker: string;
+  meta: Meta[];
+  headings: MarkdownHeading[];
+  back: { href: string; label: string };
+  prev?: { href: string; title: string };
+  next?: { href: string; title: string };
+}
+
+const { title, description, kicker, meta, headings, back, prev, next } = Astro.props;
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<Base title={title} description={description}>
+  <article>
+    <header class="page-head wrap article-head">
+      <a href={back.href} class="label back" data-reveal>← {back.label}</a>
+      <span class="label label-accent" data-reveal data-delay="0.05">{kicker}</span>
+      <h1 class="title-kr"><span data-split>{title}</span></h1>
+      {description && <p data-reveal data-delay="0.3">{description}</p>}
+      <hr class="rule" data-draw />
+      <dl class="meta" data-reveal data-delay="0.4">
+        {
+          meta.map((m) => (
+            <div>
+              <dt class="label">{m.label}</dt>
+              <dd>
+                {m.href ? (
+                  <a href={m.href} target="_blank" rel="noopener noreferrer">
+                    {m.value} ↗
+                  </a>
+                ) : (
+                  m.value
+                )}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+    </header>
+
+    <div class="wrap article-body">
+      {
+        toc.length > 0 && (
+          <aside class="toc" data-toc>
+            <span class="label">Contents</span>
+            <ol>
+              {toc.map((h) => (
+                <li class={`d${h.depth}`}>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        )
+      }
+      <div class="prose" data-reveal data-delay="0.45">
+        <slot />
+      </div>
+    </div>
+
+    <nav class="wrap pager" aria-label="이전/다음 글">
+      {
+        prev ? (
+          <a href={prev.href} class="pager-link" data-cursor-label="Prev">
+            <span class="label">← Previous</span>
+            <span class="pager-title">{prev.title}</span>
+          </a>
+        ) : (
+          <span />
+        )
+      }
+      {
+        next && (
+          <a href={next.href} class="pager-link pager-next" data-cursor-label="Next">
+            <span class="label">Next →</span>
+            <span class="pager-title">{next.title}</span>
+          </a>
+        )
+      }
+    </nav>
+  </article>
+</Base>
+
+<style>
+  .article-head h1 {
+    font-size: clamp(30px, 4.2vw, 60px);
+    line-height: 1.05;
+    max-width: 20ch;
+    margin: 0;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 40px;
+    transition: color 0.3s;
+  }
+  .back:hover {
+    color: var(--fg);
+  }
+  .article-head .rule {
+    margin-top: 48px;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    margin: 24px 0 0;
+  }
+  .meta dd {
+    margin: 6px 0 0;
+    font-size: 15px;
+  }
+  .meta a {
+    color: var(--accent-2);
+  }
+  .article-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
+  }
+  @media (min-width: 1100px) {
+    .article-body {
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: clamp(48px, 6vw, 120px);
+    }
+  }
+  .toc {
+    align-self: start;
+    position: sticky;
+    top: 100px;
+    font-size: 13px;
+  }
+  @media (max-width: 1099px) {
+    .toc {
+      display: none;
+    }
+  }
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    border-left: 1px solid var(--line);
+  }
+  .toc li a {
+    display: block;
+    padding: 6px 0 6px 16px;
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    color: var(--muted);
+    transition: color 0.3s, border-color 0.3s;
+  }
+  .toc li.d3 a {
+    padding-left: 30px;
+    font-size: 12px;
+  }
+  .toc a:hover,
+  .toc a:global(.is-active) {
+    color: var(--fg);
+    border-left-color: var(--accent);
+  }
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 120px;
+  }
+  .pager-link {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 32px 0;
+    border-top: 1px solid var(--line);
+    transition: border-color 0.4s;
+  }
+  .pager-link:hover {
+    border-color: var(--fg);
+  }
+  .pager-next {
+    text-align: right;
+  }
+  .pager-title {
+    font-family: var(--font-display);
+    font-size: clamp(20px, 2.4vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  @media (max-width: 720px) {
+    .pager {
+      grid-template-columns: 1fr;
+    }
+    .pager-next {
+      text-align: left;
+    }
+  }
+</style>

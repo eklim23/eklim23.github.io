@@ -1,0 +1,50 @@
+---
+import { site } from '../data/site';
+import { getWriteups, getProjects } from '../data/content';
+
+const writeups = await getWriteups();
+const projects = await getProjects();
+// 로고 옆 터미널 줄에 차례로 타이핑되는 명령: 최근 라이트업 파일
+const commands = writeups.length
+  ? writeups.slice(0, 4).map((w) => `cat ${w.data.category}/${w.id}.md`)
+  : ['ls writeups/'];
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/writeups/', label: 'Writeups', count: writeups.length },
+  { href: '/projects/', label: 'Projects', count: projects.length },
+  { href: '/resume/', label: 'Resume' },
+  ...site.links.map((l) => ({ href: l.href, label: `${l.label} ↗`, external: true })),
+];
+---
+
+<header class="header">
+  <a href="/" class="logo" aria-label="홈으로">{site.handle}</a>
+  <div class="typer" data-typer={JSON.stringify(commands)} aria-hidden="true">
+    <span class="typer-prompt">~/writeups $</span>
+    <span data-typer-text></span><span class="typer-caret"></span>
+  </div>
+  <div class="header-actions">
+    <a href="/resume/" class="pill pill-dark">Resume <span class="dot"></span></a>
+    <button type="button" class="pill pill-light" data-menu-toggle aria-expanded="false" aria-controls="menu">
+      Menu <span class="studs"><i></i><i></i><i></i><i></i></span>
+    </button>
+    <nav class="menu" id="menu" data-menu aria-label="메뉴">
+      <ul>
+        {
+          links.map((l, i) => (
+            <li>
+              <a
+                href={l.href}
+                style={`--i:${i}`}
+                {...('external' in l ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                {l.label}
+                {'count' in l && <small>{String(l.count).padStart(2, '0')}</small>}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

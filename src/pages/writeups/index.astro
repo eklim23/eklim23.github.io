@@ -1,0 +1,87 @@
+---
+import Base from '../../layouts/Base.astro';
+import WriteupRow from '../../components/WriteupRow.astro';
+import { categories } from '../../data/site';
+import { getWriteups, pad } from '../../data/content';
+
+const writeups = await getWriteups();
+const counts = new Map<string, number>();
+for (const w of writeups) counts.set(w.data.category, (counts.get(w.data.category) ?? 0) + 1);
+const filters = Object.entries(categories).filter(([key]) => counts.has(key));
+---
+
+<Base title="Writeups" description="워게임 · CTF 문제 풀이">
+  <header class="page-head wrap">
+    <span class="label label-accent" data-reveal>Wargame / CTF</span>
+    <h1 class="display"><span data-split="chars">Writeups</span></h1>
+  </header>
+
+  <section class="wrap">
+    <div class="filters" data-filter-root data-reveal data-delay="0.4">
+      <div class="filter-buttons" role="group" aria-label="Category filter">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">
+          All <sup>{pad(writeups.length)}</sup>
+        </button>
+        {
+          filters.map(([key, label]) => (
+            <button type="button" class="filter" data-filter={key} aria-pressed="false">
+              {label} <sup>{pad(counts.get(key) ?? 0)}</sup>
+            </button>
+          ))
+        }
+      </div>
+      <span class="label"><span data-filter-count>{pad(writeups.length)}</span> posts</span>
+    </div>
+
+    {
+      writeups.length ? (
+        <ul class="rows">
+          {writeups.map((w, i) => (
+            <WriteupRow entry={w} index={i} />
+          ))}
+        </ul>
+      ) : (
+        <p class="label">No posts yet.</p>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .filter {
+    padding: 10px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    transition: all 0.35s var(--ease);
+  }
+  .filter sup {
+    font-size: 9px;
+    margin-left: 2px;
+  }
+  .filter:hover {
+    color: var(--fg);
+    border-color: var(--line-strong);
+  }
+  .filter[aria-pressed='true'] {
+    background: var(--fg);
+    border-color: var(--fg);
+    color: var(--bg);
+  }
+</style>

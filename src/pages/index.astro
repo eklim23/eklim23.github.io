@@ -1,0 +1,286 @@
+---
+import Base from '../layouts/Base.astro';
+import WriteupCard from '../components/WriteupCard.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { site, categories } from '../data/site';
+import { getWriteups, getProjects, formatDate, pad } from '../data/content';
+
+const writeups = await getWriteups();
+const projects = await getProjects();
+const featured = [...projects].sort((a, b) => Number(b.data.featured) - Number(a.data.featured)).slice(0, 4);
+const latest = writeups[0];
+const usedCategories = [...new Set(writeups.map((w) => categories[w.data.category]))];
+
+// 레고 블록 하나당 라이트업 하나
+const links = writeups.map((w) => ({
+  href: `/writeups/${w.id}/`,
+  title: w.data.title,
+  meta: [categories[w.data.category], w.data.platform, w.data.level != null && w.data.level !== '' ? `Lv.${w.data.level}` : '']
+    .filter(Boolean)
+    .join(' · '),
+}));
+const linksJson = JSON.stringify(links).replaceAll('<', '\\u003c');
+---
+
+<Base>
+  <section class="hero wrap">
+    <div class="window" data-hero-window>
+      <div class="window-bar" aria-hidden="true">
+        <span class="window-dots"><i></i><i></i><i></i></span>
+        <span class="window-path">~/writeups/bricks</span>
+        <span class="window-hint">{pad(links.length)} linked — click a brick</span>
+      </div>
+      <canvas class="window-canvas" data-bricks aria-label="라이트업 레고 블록. 블록을 누르면 해당 글로 이동합니다."></canvas>
+      <script type="application/json" id="brick-links" set:html={linksJson} />
+    </div>
+    <div class="ruler" aria-hidden="true"><span class="label">Scroll</span></div>
+    <div class="brick-tip" data-brick-tip hidden>
+      <span class="label muted" data-tip-meta></span>
+      <strong class="title-kr" data-tip-title></strong>
+    </div>
+  </section>
+
+  <section class="intro wrap">
+    <span class="intro-kicker label" data-reveal>01 — Writeups</span>
+    <h2 class="intro-title display">
+      <span data-split>Wargame &amp; CTF</span><br />
+      <span data-split data-delay="0.1">Writeups</span>
+    </h2>
+
+    <div class="intro-grid">
+      <div class="intro-visual">
+        <svg class="arc" viewBox="0 0 700 900" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            data-draw-path
+            d="M -60 40 H 140 V 160 H 300 V 290 H 440 V 430 H 580 V 580 H 780"
+          ></path>
+        </svg>
+        {
+          latest && (
+            <a href={`/writeups/${latest.id}/`} class="intro-card" data-speed="0.08">
+              <span class="label">Latest — {categories[latest.data.category]}</span>
+              <strong class="title-kr">{latest.data.title}</strong>
+              <span class="label intro-card-foot">
+                <span>
+                  {latest.data.platform} · {formatDate(latest.data.date)}
+                </span>
+                <span>Read →</span>
+              </span>
+            </a>
+          )
+        }
+      </div>
+      <div class="intro-text">
+        <p data-reveal>
+          {site.intro ||
+            `${pad(writeups.length)} writeups${usedCategories.length ? ` — ${usedCategories.join(', ')}` : ''}. ${pad(projects.length)} projects.`}
+        </p>
+        <a href="/writeups/" class="pill" data-reveal data-delay="0.1"><span class="dot"></span> All writeups</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head">
+      <h2 class="display"><span data-split>Writeups</span><sup>{pad(writeups.length)}</sup></h2>
+      <a href="/writeups/" class="pill pill-light">View all <span class="dot"></span></a>
+    </div>
+    {
+      writeups.length ? (
+        <div class="cards">
+          {writeups.slice(0, 4).map((w, i) => (
+            <WriteupCard entry={w} index={i} />
+          ))}
+        </div>
+      ) : (
+        <p class="label muted">No posts yet.</p>
+      )
+    }
+  </section>
+
+  <section class="section wrap">
+    <div class="section-head">
+      <h2 class="display"><span data-split>Projects</span><sup>{pad(projects.length)}</sup></h2>
+      <a href="/projects/" class="pill pill-light">View all <span class="dot"></span></a>
+    </div>
+    {
+      featured.length ? (
+        <div class="cards">
+          {featured.map((p, i) => (
+            <ProjectCard entry={p} index={i} />
+          ))}
+        </div>
+      ) : (
+        <p class="label muted">No posts yet.</p>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding-top: clamp(110px, 21vh, 200px);
+  }
+  .window {
+    position: relative;
+    height: calc(100svh - clamp(110px, 21vh, 200px) - 48px);
+    min-height: 420px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: radial-gradient(110% 90% at 50% 30%, #1b1c24 0%, #111218 55%, #0c0d11 100%);
+  }
+  .window-bar {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 44px;
+    padding: 0 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+  }
+  .window-dots {
+    display: flex;
+    gap: 7px;
+  }
+  .window-dots i {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .window-dots i:first-child {
+    background: var(--accent);
+  }
+  .window-hint {
+    margin-left: auto;
+  }
+  @media (max-width: 720px) {
+    .window-hint {
+      display: none;
+    }
+  }
+  .window-canvas {
+    position: absolute;
+    inset: 44px 0 0;
+    width: 100%;
+    height: calc(100% - 44px);
+    display: block;
+    touch-action: pan-y;
+  }
+
+  .brick-tip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 320px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+  }
+  .brick-tip[hidden] {
+    display: none;
+  }
+  .brick-tip strong {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+
+  .intro {
+    position: relative;
+    padding-top: clamp(120px, 20vh, 220px);
+  }
+  .intro-title {
+    font-size: clamp(40px, 5.8vw, 88px);
+    position: relative;
+    z-index: 1;
+  }
+  .intro-kicker {
+    display: block;
+    margin-bottom: 24px;
+    color: var(--muted);
+  }
+  .intro-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 48px;
+    margin-top: 72px;
+  }
+  .intro-visual {
+    position: relative;
+    min-height: 340px;
+  }
+  .arc {
+    position: absolute;
+    left: calc(var(--gutter) * -1);
+    top: -24px;
+    width: calc(100% + var(--gutter));
+    height: 620px;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .arc path {
+    fill: none;
+    stroke: var(--accent-2);
+    stroke-width: 26;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .intro-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 40px;
+    min-height: 320px;
+    padding: 28px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    transition: background-color 0.5s var(--ease);
+  }
+  .intro-card:hover {
+    background: var(--dark);
+  }
+  .intro-card strong {
+    font-size: clamp(26px, 2.6vw, 40px);
+    line-height: 1.15;
+  }
+  .intro-card-foot {
+    display: flex;
+    justify-content: space-between;
+    opacity: 0.8;
+  }
+  .intro-text p {
+    margin: 0 0 36px;
+    max-width: 34ch;
+    font-family: var(--font-display);
+    font-size: clamp(18px, 1.5vw, 21px);
+    line-height: 1.5;
+    word-break: keep-all;
+  }
+
+  @media (max-width: 800px) {
+    .intro-grid {
+      grid-template-columns: 1fr;
+    }
+    .intro-text {
+      order: -1;
+    }
+    .arc {
+      display: none;
+    }
+  }
+</style>

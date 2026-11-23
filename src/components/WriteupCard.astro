@@ -1,0 +1,34 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { categories } from '../data/site';
+import { formatDate, pad } from '../data/content';
+
+interface Props {
+  entry: CollectionEntry<'writeups'>;
+  index: number;
+}
+const { entry, index } = Astro.props;
+const { title, platform, category, level, date, draft } = entry.data;
+const tones = { web: 'blue', pwn: 'dark', rev: 'light', crypto: 'white', forensics: 'blue', misc: 'dark' } as const;
+---
+
+<article class="card" data-reveal data-delay={(index % 2) * 0.1}>
+  <a href={`/writeups/${entry.id}/`}>
+    <div class="card-tile" data-tone={tones[category]}>
+      <div class="card-tile-inner">
+        <div class="label" style="display:flex;justify-content:space-between">
+          <span>{platform}{level != null && level !== '' && ` · Lv.${level}`}</span>
+          <span>{pad(index + 1)}</span>
+        </div>
+        <span class="card-big">{categories[category]}</span>
+      </div>
+      <span class="card-go" aria-hidden="true">→</span>
+    </div>
+    <div class="card-body">
+      <div>
+        <h3 class="card-title title-kr">{title}{draft && ' (draft)'}</h3>
+        <p class="card-sub">{formatDate(date)}</p>
+      </div>
+    </div>
+  </a>
+</article>

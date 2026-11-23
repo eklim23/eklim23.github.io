@@ -1,0 +1,222 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../data/site';
+import { resume, type ResumeItem } from '../data/resume';
+
+const sections: { title: string; items: ResumeItem[] }[] = [
+  { title: 'Education', items: resume.education },
+  { title: 'Experience', items: resume.experience },
+  { title: 'Awards', items: resume.awards },
+  { title: 'Certifications', items: resume.certifications },
+].filter((s) => s.items.length > 0);
+---
+
+<Base title="Resume" description={`${site.name} 이력서`}>
+  <header class="page-head wrap">
+    {site.role && <span class="label label-accent" data-reveal>{site.role}</span>}
+    <h1 class="display title-kr"><span data-split="chars">{site.name}</span></h1>
+    <div class="actions" data-reveal data-delay="0.4">
+      <button type="button" class="pill pill-dark" onclick="window.print()">Save as PDF <span class="dot"></span></button>
+      {site.email && <a href={`mailto:${site.email}`} class="pill">{site.email}</a>}
+    </div>
+  </header>
+
+  <div class="wrap resume">
+    {
+      resume.summary && (
+        <section class="block">
+          <h2 class="label">About</h2>
+          <p class="summary" data-reveal>{resume.summary}</p>
+        </section>
+      )
+    }
+
+    {
+      sections.map((s) => (
+        <section class="block">
+          <h2 class="label">{s.title}</h2>
+          <ul class="items">
+            {s.items.map((item) => (
+              <li class="item" data-reveal>
+                <hr class="rule" data-draw />
+                <div class="item-head">
+                  <h3>
+                    {item.link ? (
+                      <a href={item.link} target="_blank" rel="noopener noreferrer">
+                        {item.title} ↗
+                      </a>
+                    ) : (
+                      item.title
+                    )}
+                  </h3>
+                  {item.period && <span class="label">{item.period}</span>}
+                </div>
+                {item.org && <p class="org">{item.org}</p>}
+                {item.detail && (
+                  <ul class="detail">
+                    {item.detail.map((d) => (
+                      <li>{d}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+
+    {resume.skills.length > 0 && (
+    <section class="block">
+      <h2 class="label">Skills</h2>
+      <div class="skills">
+        {
+          resume.skills.map((g) => (
+            <div class="skill-group" data-reveal>
+              <hr class="rule" data-draw />
+              <h3>{g.group}</h3>
+              <div class="chips">
+                {g.items.map((s) => (
+                  <span class="chip">{s}</span>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+    )}
+  </div>
+</Base>
+
+<style>
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .block {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 24px;
+    padding: 56px 0;
+  }
+  @media (max-width: 800px) {
+    .block {
+      grid-template-columns: 1fr;
+      padding: 40px 0;
+    }
+  }
+  .block > h2 {
+    margin: 0;
+    padding-top: 22px;
+  }
+  .summary {
+    font-size: 18px;
+    line-height: 1.8;
+    margin: 0;
+    padding-top: 16px;
+    max-width: 60ch;
+    white-space: pre-line;
+    word-break: keep-all;
+  }
+  .items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .item {
+    padding-bottom: 28px;
+  }
+  .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding-top: 20px;
+  }
+  .item h3,
+  .skill-group h3 {
+    font-family: var(--font-display);
+    font-size: clamp(20px, 2vw, 26px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .item h3 a:hover {
+    color: var(--accent-2);
+  }
+  .org {
+    margin: 4px 0 0;
+    color: var(--muted);
+  }
+  .detail {
+    margin: 12px 0 0;
+    padding-left: 18px;
+    color: var(--muted);
+  }
+  .skills {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0 32px;
+  }
+  .skill-group {
+    padding-bottom: 28px;
+  }
+  .skill-group h3 {
+    padding: 20px 0 14px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* 인쇄(PDF 저장) 시에는 효과를 모두 끄고 흰 종이에 맞춘다 */
+  @media print {
+    :global(#gl),
+    :global(.nav),
+    :global(.cursor),
+    :global(.curtain),
+    :global(.site-footer),
+    .actions {
+      display: none !important;
+    }
+    :global(body),
+    :global(html) {
+      background: #fff !important;
+      color: #111 !important;
+    }
+    :global(.page-head) {
+      padding: 0 0 24px !important;
+    }
+    :global(.page-head h1) {
+      font-size: 48px !important;
+    }
+    :global([data-reveal]),
+    :global(.wi),
+    :global(.ch),
+    :global(.rule) {
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+    }
+    :global(.label),
+    .org,
+    .detail {
+      color: #555 !important;
+    }
+    :global(.rule) {
+      background: #ddd !important;
+    }
+    :global(.chip) {
+      color: #333 !important;
+      border-color: #ccc !important;
+    }
+    .block {
+      padding: 20px 0;
+      break-inside: avoid;
+    }
+  }
+</style>

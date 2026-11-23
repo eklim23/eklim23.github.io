@@ -1,0 +1,25 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { categories } from '../data/site';
+import { formatDate, pad } from '../data/content';
+
+interface Props {
+  entry: CollectionEntry<'writeups'>;
+  index: number;
+}
+const { entry, index } = Astro.props;
+const { title, platform, category, level, date, draft } = entry.data;
+const hasLevel = level !== undefined && level !== null && level !== '';
+---
+
+<li class="row" data-category={category} data-reveal>
+  <a href={`/writeups/${entry.id}/`}>
+    <span class="row-index">{pad(index + 1)}</span>
+    <span class="row-title title-kr">{title}{draft && ' (draft)'}</span>
+    <span class="row-meta">
+      <span class="chip">{categories[category]}</span>
+      <span>{platform}{hasLevel && ` · Lv.${level}`}</span>
+      <span>{formatDate(date)}</span>
+    </span>
+  </a>
+</li>
